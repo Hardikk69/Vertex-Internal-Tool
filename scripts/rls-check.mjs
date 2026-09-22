@@ -75,6 +75,11 @@ assert.deepEqual(await as(team1, "select work_description, total_duration::text 
 ]);
 assert.equal(await count(team1, "todos"), 1);
 assert.equal(await count(team1, "clients"), 2);
+await as(team1, `insert into public.clients (name) values ('Cobalt')`);
+assert.equal(await count(team1, "clients"), 3);
+await rejects(as(team1, `insert into public.clients (name) values ('  ')`), /clients_name_not_blank/);
+await rejects(as(clientA, `insert into public.clients (name) values ('x')`), /row-level security/);
+await rejects(as(nobody, `insert into public.clients (name) values ('x')`), /row-level security/);
 assert.equal(await count(team1, "project_comments"), 3);
 await as(team2, `delete from public.time_logs`);
 assert.equal((await db.query("select count(*)::int as n from public.time_logs")).rows[0].n, 1); // team2 only deleted its own

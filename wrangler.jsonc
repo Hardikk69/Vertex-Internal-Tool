@@ -1,0 +1,11 @@
+// Cloudflare Workers static assets. Build first (`npm run build`), then `npx wrangler deploy`.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "vertex-internal-tool",
+  "compatibility_date": "2026-09-22",
+  "assets": {
+    "directory": "./dist",
+    // SPA: unknown paths (e.g. /time on refresh) serve index.html; React Router takes it from there
+    "not_found_handling": "single-page-application"
+  }
+}
