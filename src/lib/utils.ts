@@ -12,3 +12,9 @@ export function duration(ms: number) {
     .map((n) => String(n).padStart(2, "0"))
     .join(":");
 }
+
+// ms → "1h 05m"
+export function hoursMinutes(ms: number) {
+  const m = Math.round(ms / 60000);
+  return `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, "0")}m`;
+}

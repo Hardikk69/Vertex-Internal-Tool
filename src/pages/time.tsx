@@ -19,18 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableFooter,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/lib/supabase";
-import { duration } from "@/lib/utils";
+import { duration, hoursMinutes } from "@/lib/utils";
 
 type Client = { id: string; name: string };
 type Log = {
@@ -47,6 +38,9 @@ const elapsed = (log: Log, end = log.clock_out) =>
   (end ? new Date(end).getTime() : Date.now()) - new Date(log.clock_in).getTime();
 const time = (iso: string) =>
   new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+const day = (iso: string) =>
+  new Date(iso).toLocaleDateString([], { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+const sum = (logs: Log[]) => logs.reduce((ms, log) => ms + elapsed(log), 0);
 
 export default function TimePage() {
   const [clients, setClients] = useState<Client[]>([]);
@@ -135,7 +129,7 @@ export default function TimePage() {
     load();
   }
 
-  const total = history.reduce((sum, log) => sum + elapsed(log), 0);
+  const total = sum(history);
 
   return (
     <div className="grid gap-10">
@@ -225,7 +219,15 @@ export default function TimePage() {
 
       <section className="grid gap-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
-          <h2 className="text-lg font-semibold">History</h2>
+          <div>
+            <h2 className="text-lg font-semibold">History</h2>
+            {history.length > 0 && (
+              <p className="text-sm text-muted-foreground">
+                {history.length} {history.length === 1 ? "entry" : "entries"} ·{" "}
+                <span className="font-medium text-foreground">{hoursMinutes(total)}</span> total
+              </p>
+            )}
+          </div>
           <div className="grid w-full grid-cols-2 items-end gap-3 sm:flex sm:w-auto">
             <Select
               value={filter.client}
@@ -264,68 +266,43 @@ export default function TimePage() {
           </div>
         </div>
 
-        <Card className="overflow-hidden">
-          {history.length === 0 ? (
+        {history.length === 0 ? (
+          <Card>
             <p className="py-10 text-center text-sm text-muted-foreground">
               No time logged for these filters.
             </p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Client</TableHead>
-                  <TableHead className="hidden sm:table-cell">Date</TableHead>
-                  <TableHead className="hidden sm:table-cell">In</TableHead>
-                  <TableHead className="hidden sm:table-cell">Out</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead className="hidden sm:table-cell">Work</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {history.map((log) => (
-                  <TableRow key={log.id}>
-                    <TableCell className="align-top">
-                      <p className="font-medium">{clientName(log.client_id)}</p>
-                      <div className="mt-1 grid gap-1 text-xs text-muted-foreground sm:hidden">
-                        <p>
-                          {new Date(log.clock_in).toLocaleDateString()} · {time(log.clock_in)} –{" "}
-                          {time(log.clock_out!)}
+          </Card>
+        ) : (
+          <div className="grid gap-6">
+            {/* history is newest-first, and Map.groupBy keeps that order */}
+            {[...Map.groupBy(history, (log) => day(log.clock_in))].map(([label, logs]) => (
+              <div key={label} className="grid gap-2">
+                <div className="flex items-baseline justify-between px-1 text-sm text-muted-foreground">
+                  <h3 className="font-medium">{label}</h3>
+                  <span className="tabular-nums">{hoursMinutes(sum(logs))}</span>
+                </div>
+                <Card className="divide-y">
+                  {logs.map((log) => (
+                    <div key={log.id} className="flex gap-4 p-4">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium">{clientName(log.client_id)}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {time(log.clock_in)} – {time(log.clock_out!)}
                         </p>
-                        <p className="whitespace-pre-wrap text-sm">{log.work_description}</p>
+                        <p className="mt-2 whitespace-pre-wrap break-words text-sm text-foreground/80">
+                          {log.work_description}
+                        </p>
                       </div>
-                    </TableCell>
-                    <TableCell className="hidden whitespace-nowrap sm:table-cell">
-                      {new Date(log.clock_in).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="hidden whitespace-nowrap sm:table-cell">
-                      {time(log.clock_in)}
-                    </TableCell>
-                    <TableCell className="hidden whitespace-nowrap sm:table-cell">
-                      {time(log.clock_out!)}
-                    </TableCell>
-                    <TableCell className="text-right align-top font-mono tabular-nums sm:align-middle">
-                      {duration(elapsed(log))}
-                    </TableCell>
-                    <TableCell className="hidden min-w-64 whitespace-pre-wrap text-muted-foreground sm:table-cell">
-                      {log.work_description}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-              <TableFooter>
-                <TableRow>
-                  <TableCell>Total</TableCell>
-                  {/* hidden cells, not colSpan, so the row still lines up on phones */}
-                  <TableCell colSpan={3} className="hidden sm:table-cell" />
-                  <TableCell className="text-right font-mono tabular-nums">
-                    {duration(total)}
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell" />
-                </TableRow>
-              </TableFooter>
-            </Table>
-          )}
-        </Card>
+                      <p className="shrink-0 font-semibold tabular-nums">
+                        {hoursMinutes(elapsed(log))}
+                      </p>
+                    </div>
+                  ))}
+                </Card>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );
