@@ -74,7 +74,7 @@ export function CommentThread({ clientId, userId }: { clientId: string; userId: 
   }
 
   return (
-    <Card className="flex h-[70vh] min-h-96 flex-col overflow-hidden">
+    <Card className="flex h-[70dvh] min-h-96 flex-col overflow-hidden">
       <div ref={list} className="flex-1 space-y-5 overflow-y-auto p-4 md:p-6" aria-live="polite">
         {comments?.length === 0 && (
           <p className="py-16 text-center text-sm text-muted-foreground">
@@ -124,7 +124,7 @@ export function CommentThread({ clientId, userId }: { clientId: string; userId: 
             }
           }}
           rows={2}
-          placeholder="Write an update… (Enter to send, Shift+Enter for a new line)"
+          placeholder="Write an update…"
           aria-label="Message"
           className="min-h-0 resize-none"
         />

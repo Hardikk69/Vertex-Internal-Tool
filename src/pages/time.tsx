@@ -157,15 +157,16 @@ export default function TimePage() {
               <Button
                 size="lg"
                 variant="destructive"
+                className="w-full sm:w-auto"
                 onClick={() => setStoppedAt(new Date().toISOString())}
               >
                 Clock out
               </Button>
             </div>
           ) : (
-            <div className="flex flex-wrap gap-3">
+            <div className="flex gap-3">
               <Select value={clientId} onValueChange={setClientId}>
-                <SelectTrigger className="w-64" aria-label="Client">
+                <SelectTrigger className="min-w-0 flex-1 sm:w-64 sm:flex-none" aria-label="Client">
                   <SelectValue placeholder="Select client" />
                 </SelectTrigger>
                 <SelectContent>
@@ -185,7 +186,7 @@ export default function TimePage() {
       </Card>
 
       <Dialog open={!!stoppedAt} onOpenChange={(open) => !open && setStoppedAt(null)}>
-        <DialogContent>
+        <DialogContent className="w-[calc(100%-2rem)] rounded-xl">
           <form
             className="grid gap-4"
             onSubmit={(e) => {
@@ -225,12 +226,12 @@ export default function TimePage() {
       <section className="grid gap-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <h2 className="text-lg font-semibold">History</h2>
-          <div className="flex flex-wrap items-end gap-3">
+          <div className="grid w-full grid-cols-2 items-end gap-3 sm:flex sm:w-auto">
             <Select
               value={filter.client}
               onValueChange={(client) => setFilter((f) => ({ ...f, client }))}
             >
-              <SelectTrigger className="w-44" aria-label="Filter by client">
+              <SelectTrigger className="col-span-2 sm:w-44" aria-label="Filter by client">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -242,18 +243,20 @@ export default function TimePage() {
                 ))}
               </SelectContent>
             </Select>
-            <Label className="grid gap-1 text-xs text-muted-foreground">
+            <Label className="grid min-w-0 gap-1 text-xs text-muted-foreground">
               From
               <Input
                 type="date"
+                className="min-w-0"
                 value={filter.from}
                 onChange={(e) => setFilter((f) => ({ ...f, from: e.target.value }))}
               />
             </Label>
-            <Label className="grid gap-1 text-xs text-muted-foreground">
+            <Label className="grid min-w-0 gap-1 text-xs text-muted-foreground">
               To
               <Input
                 type="date"
+                className="min-w-0"
                 value={filter.to}
                 onChange={(e) => setFilter((f) => ({ ...f, to: e.target.value }))}
               />
@@ -262,52 +265,66 @@ export default function TimePage() {
         </div>
 
         <Card className="overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Client</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>In</TableHead>
-                <TableHead>Out</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead>Work</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {history.map((log) => (
-                <TableRow key={log.id}>
-                  <TableCell className="font-medium">{clientName(log.client_id)}</TableCell>
-                  <TableCell>{new Date(log.clock_in).toLocaleDateString()}</TableCell>
-                  <TableCell>{time(log.clock_in)}</TableCell>
-                  <TableCell>{time(log.clock_out!)}</TableCell>
-                  <TableCell className="text-right font-mono tabular-nums">
-                    {duration(elapsed(log))}
-                  </TableCell>
-                  <TableCell className="min-w-64 whitespace-pre-wrap text-muted-foreground">
-                    {log.work_description}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {history.length === 0 && (
+          {history.length === 0 ? (
+            <p className="py-10 text-center text-sm text-muted-foreground">
+              No time logged for these filters.
+            </p>
+          ) : (
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
-                    No time logged for these filters.
-                  </TableCell>
+                  <TableHead>Client</TableHead>
+                  <TableHead className="hidden sm:table-cell">Date</TableHead>
+                  <TableHead className="hidden sm:table-cell">In</TableHead>
+                  <TableHead className="hidden sm:table-cell">Out</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="hidden sm:table-cell">Work</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-            {history.length > 0 && (
+              </TableHeader>
+              <TableBody>
+                {history.map((log) => (
+                  <TableRow key={log.id}>
+                    <TableCell className="align-top">
+                      <p className="font-medium">{clientName(log.client_id)}</p>
+                      <div className="mt-1 grid gap-1 text-xs text-muted-foreground sm:hidden">
+                        <p>
+                          {new Date(log.clock_in).toLocaleDateString()} · {time(log.clock_in)} –{" "}
+                          {time(log.clock_out!)}
+                        </p>
+                        <p className="whitespace-pre-wrap text-sm">{log.work_description}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden whitespace-nowrap sm:table-cell">
+                      {new Date(log.clock_in).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="hidden whitespace-nowrap sm:table-cell">
+                      {time(log.clock_in)}
+                    </TableCell>
+                    <TableCell className="hidden whitespace-nowrap sm:table-cell">
+                      {time(log.clock_out!)}
+                    </TableCell>
+                    <TableCell className="text-right align-top font-mono tabular-nums sm:align-middle">
+                      {duration(elapsed(log))}
+                    </TableCell>
+                    <TableCell className="hidden min-w-64 whitespace-pre-wrap text-muted-foreground sm:table-cell">
+                      {log.work_description}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
               <TableFooter>
                 <TableRow>
-                  <TableCell colSpan={4}>Total</TableCell>
+                  <TableCell>Total</TableCell>
+                  {/* hidden cells, not colSpan, so the row still lines up on phones */}
+                  <TableCell colSpan={3} className="hidden sm:table-cell" />
                   <TableCell className="text-right font-mono tabular-nums">
                     {duration(total)}
                   </TableCell>
-                  <TableCell />
+                  <TableCell className="hidden sm:table-cell" />
                 </TableRow>
               </TableFooter>
-            )}
-          </Table>
+            </Table>
+          )}
         </Card>
       </section>
     </div>

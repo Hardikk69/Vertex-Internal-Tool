@@ -14,7 +14,7 @@ import TodosPage from "@/pages/todos";
 import "./styles.css";
 
 const teamLinks = [
-  { href: "/time", label: "Time Tracking" },
+  { href: "/time", label: "Time Tracking", short: "Time" },
   { href: "/todos", label: "To-Do" },
   { href: "/clients", label: "Clients" },
 ];
