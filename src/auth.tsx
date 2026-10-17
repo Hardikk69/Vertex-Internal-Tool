@@ -7,7 +7,8 @@ export type Profile = {
   role: "team" | "client";
   name: string;
   client_id: string | null;
-  client: { name: string } | null; // the client's company, for client logins
+  is_admin: boolean; // team members who can see everyone's hours (Reports)
+  client: { name: string; retainer_hours: number | null } | null; // the client's company, for client logins
 };
 
 // signedIn with profile === null means the login exists but isn't onboarded yet.
@@ -29,7 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setTimeout(async () => {
         const { data: profile, error } = await supabase
           .from("users")
-          .select("id, role, name, client_id, client:clients(name)")
+          .select("id, role, name, client_id, is_admin, client:clients!users_client_id_fkey(name, retainer_hours)")
           .eq("id", id)
           .maybeSingle();
         if (error) toast.error(`Couldn't load your profile: ${error.message}`);
