@@ -1,4 +1,4 @@
-import { ListTodo, Trash2 } from "lucide-react";
+import { CheckCircle2, Circle, ListTodo, Plus, Search, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Loading, LoadFailed } from "@/components/async-state";
@@ -30,6 +30,7 @@ export default function TodosPage() {
   const [title, setTitle] = useState("");
   const [clientId, setClientId] = useState(NONE);
   const [clients, setClients] = useState<Client[]>([]);
+  const [search, setSearch] = useState("");
   const titleInput = useRef<HTMLInputElement>(null);
   const carried = useRef(false);
   const pending = useRef(new Map<string, ReturnType<typeof setTimeout>>());
@@ -97,7 +98,7 @@ export default function TodosPage() {
         run(supabase.from("todos").delete().eq("id", t.id));
       }, 5000),
     );
-    toast(`Deleted “${t.title}”`, {
+    toast(`Deleted "${t.title}"`, {
       duration: 5000,
       action: {
         label: "Undo",
@@ -128,66 +129,158 @@ export default function TodosPage() {
   }
 
   const isToday = date === localToday();
-  const left = todos?.filter((t) => !t.done).length ?? 0;
+  const total = todos?.length ?? 0;
+  const done = todos?.filter((t) => t.done).length ?? 0;
+  const left = total - done;
+
+  // Filter todos by search
+  const filtered = todos?.filter((t) =>
+    search ? t.title.toLowerCase().includes(search.toLowerCase()) : true,
+  );
+
+  const dateLabel = isToday
+    ? "Today"
+    : new Date(`${date}T00:00`).toLocaleDateString([], {
+        weekday: "long",
+        month: "short",
+        day: "numeric",
+      });
 
   return (
-    <div className="mx-auto grid max-w-2xl gap-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">
-            {isToday
-              ? "Today"
-              : new Date(`${date}T00:00`).toLocaleDateString([], {
-                  weekday: "long",
-                  month: "short",
-                  day: "numeric",
-                })}
+    <div className="space-y-5">
+      {/* SaaS Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/70 pb-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span>Vertex Agency</span>
+            <span>/</span>
+            <span className="font-semibold text-foreground">Tasks</span>
+          </div>
+          <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+            {dateLabel}&apos;s Tasks
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             {!todos
-              ? "Loading…"
+              ? "Loading tasks…"
               : todos.length
-                ? `${left} of ${todos.length} left`
-                : "Nothing planned yet."}
+                ? `${left} pending · ${done} completed · ${total} total`
+                : "No tasks planned yet. Add one below."}
           </p>
         </div>
-        <Input
-          type="date"
-          aria-label="Day"
-          value={date}
-          onChange={(e) => setDate(e.target.value || localToday())}
-          className="w-auto"
-        />
+
+        <div className="flex items-center gap-2">
+          <Input
+            type="date"
+            aria-label="Day"
+            value={date}
+            onChange={(e) => setDate(e.target.value || localToday())}
+            className="w-auto h-9 rounded-xl text-xs bg-card border-border/80"
+          />
+        </div>
       </div>
 
-      <form onSubmit={add} className="flex gap-2">
-        <Input
-          ref={titleInput}
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Add a to-do…"
-          aria-label="New to-do"
-        />
-        <Select value={clientId} onValueChange={setClientId}>
-          <SelectTrigger className="w-32 shrink-0 sm:w-40" aria-label="Client (optional)">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={NONE}>No client</SelectItem>
-            {clients
-              .filter((c) => !c.archived)
-              .map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.name}
-                </SelectItem>
-              ))}
-          </SelectContent>
-        </Select>
-        <Button type="submit">Add</Button>
-      </form>
+      {/* KPI Stats Row */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="rounded-xl border border-border/70 bg-card p-3 shadow-xs">
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-[11px] font-medium uppercase tracking-wider">Pending</span>
+            <Circle className="size-3.5 text-amber-500" />
+          </div>
+          <div className="mt-1.5 flex items-baseline gap-1.5">
+            <span className="text-xl font-bold tracking-tight text-foreground">{left}</span>
+            <span className="text-[11px] text-muted-foreground">tasks</span>
+          </div>
+        </div>
 
+        <div className="rounded-xl border border-border/70 bg-card p-3 shadow-xs">
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-[11px] font-medium uppercase tracking-wider">Completed</span>
+            <CheckCircle2 className="size-3.5 text-emerald-500" />
+          </div>
+          <div className="mt-1.5 flex items-baseline gap-1.5">
+            <span className="text-xl font-bold tracking-tight text-foreground">{done}</span>
+            <span className="text-[11px] text-muted-foreground">done</span>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-border/70 bg-card p-3 shadow-xs">
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-[11px] font-medium uppercase tracking-wider">Total</span>
+            <ListTodo className="size-3.5 text-blue-500" />
+          </div>
+          <div className="mt-1.5 flex items-baseline gap-1.5">
+            <span className="text-xl font-bold tracking-tight text-foreground">{total}</span>
+            <span className="text-[11px] text-muted-foreground">tasks</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Progress Bar */}
+      {total > 0 && (
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span className="font-medium">Day Progress</span>
+            <span className="font-mono font-semibold text-foreground">
+              {total ? Math.round((done / total) * 100) : 0}%
+            </span>
+          </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-accent/60">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-500"
+              style={{ width: `${total ? (done / total) * 100 : 0}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Add Task Form & Search */}
+      <div className="rounded-2xl border border-border/70 bg-card/60 p-4 shadow-sm backdrop-blur-md space-y-3">
+        <form onSubmit={add} className="flex gap-2">
+          <Input
+            ref={titleInput}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="What needs to get done…"
+            aria-label="New to-do"
+            className="h-10 rounded-xl bg-background/60 text-sm"
+          />
+          <Select value={clientId} onValueChange={setClientId}>
+            <SelectTrigger className="w-36 shrink-0 sm:w-44 h-10 rounded-xl text-xs bg-background/60 border-border/80" aria-label="Client (optional)">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NONE}>No client</SelectItem>
+              {clients
+                .filter((c) => !c.archived)
+                .map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+          <Button type="submit" className="h-10 rounded-xl brand-gradient text-white font-semibold shadow-md px-5">
+            <Plus className="mr-1.5 size-4" /> Add
+          </Button>
+        </form>
+
+        {/* Search Filter */}
+        {total > 3 && (
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search tasks…"
+              className="h-9 pl-9 rounded-xl bg-background/60 text-xs"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Task List */}
       {failed ? (
-        <Card>
+        <Card className="rounded-2xl">
           <LoadFailed
             message={failed}
             onRetry={() => {
@@ -198,43 +291,62 @@ export default function TodosPage() {
         </Card>
       ) : !todos ? (
         <Loading className="py-6" />
-      ) : todos.length > 0 ? (
-        <Card>
-          <ul className="divide-y">
-            {todos.map((t) => (
-              <li key={t.id} className="flex items-center gap-3 px-4 py-2">
-                <Checkbox id={t.id} checked={t.done} onCheckedChange={() => toggle(t)} />
-                <label
-                  htmlFor={t.id}
-                  className={cn(
-                    "flex-1 cursor-pointer py-1.5 text-sm",
-                    t.done && "text-muted-foreground line-through",
-                  )}
-                >
-                  {t.title}
-                  {t.client_id && (
-                    <span className="ml-2 inline-block rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                      {clients.find((c) => c.id === t.client_id)?.name}
-                    </span>
-                  )}
-                </label>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label={`Delete "${t.title}"`}
-                  onClick={() => remove(t)}
-                >
-                  <Trash2 />
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </Card>
+      ) : filtered && filtered.length > 0 ? (
+        <div className="space-y-2">
+          {filtered.map((t) => (
+            <div
+              key={t.id}
+              className={cn(
+                "group flex items-center gap-3 rounded-2xl border border-border/70 bg-card p-4 shadow-sm transition-all hover:border-[#FF4B33]/40",
+                t.done && "opacity-60 bg-muted/30",
+              )}
+            >
+              <Checkbox
+                id={t.id}
+                checked={t.done}
+                onCheckedChange={() => toggle(t)}
+                className="size-5"
+              />
+              <label
+                htmlFor={t.id}
+                className={cn(
+                  "flex-1 cursor-pointer text-sm font-medium text-foreground",
+                  t.done && "text-muted-foreground line-through",
+                )}
+              >
+                {t.title}
+              </label>
+              {t.client_id && (
+                <span className="rounded-md bg-accent/80 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                  {clients.find((c) => c.id === t.client_id)?.name}
+                </span>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={`Delete "${t.title}"`}
+                onClick={() => remove(t)}
+                className="size-8 rounded-lg text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="size-3.5" />
+              </Button>
+            </div>
+          ))}
+        </div>
       ) : (
-        <Card>
-          <div className="grid justify-items-center gap-2 py-10 text-center text-sm text-muted-foreground">
-            <ListTodo className="size-5" />
-            Nothing planned for this day yet.
+        <Card className="rounded-2xl border-dashed border-border/70 p-10">
+          <div className="grid justify-items-center gap-2 text-center text-sm text-muted-foreground">
+            <div className="flex size-12 items-center justify-center rounded-2xl bg-muted/60">
+              <ListTodo className="size-6" />
+            </div>
+            <h3 className="mt-2 text-sm font-semibold text-foreground">
+              {search ? "No matching tasks" : "Nothing planned for this day"}
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              {search
+                ? "Try a different search term."
+                : "Add your first task above to get started."}
+            </p>
           </div>
         </Card>
       )}

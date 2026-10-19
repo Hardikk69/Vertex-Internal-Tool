@@ -183,160 +183,121 @@ export default function DashboardPage() {
   if (loading) return <Loading className="py-20" />;
 
   return (
-    <div className="grid gap-6">
-      {/* Welcome Banner */}
-      <div className="relative overflow-hidden rounded-3xl border border-white/20 bg-gradient-to-r from-neutral-900 via-neutral-950 to-neutral-900 p-6 text-white shadow-2xl dark:border-white/10 sm:p-8">
-        <div className="hero-checker absolute inset-0 opacity-15" />
-        <div className="relative z-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-[#FF4B33] backdrop-blur-md">
-              <Flame className="size-3.5 fill-[#FF4B33]" />
-              <span>Vertex Media House · Workspace</span>
-            </div>
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-              {greeting}, {profile?.name ?? "Team"} 👋
-            </h1>
-            <p className="text-xs text-neutral-400 sm:text-sm">
-              Today is{" "}
-              {new Date().toLocaleDateString(undefined, {
-                weekday: "long",
-                month: "short",
-                day: "numeric",
-              })}
-              . Here is your overview for today.
-            </p>
+    <div className="space-y-5">
+      {/* SaaS Product Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/70 pb-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span>Vertex Agency</span>
+            <span>/</span>
+            <span className="font-semibold text-foreground">Overview</span>
           </div>
+          <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+            {greeting}, {profile?.name ?? "Team"}
+          </h1>
+          <p className="text-xs text-muted-foreground">
+            {new Date().toLocaleDateString(undefined, {
+              weekday: "long",
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })} · Daily production overview
+          </p>
+        </div>
 
-          {/* Quick Active Timer or Clock-in widget */}
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl md:min-w-72">
-            {activeTimer ? (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs text-neutral-400">
-                  <span className="flex items-center gap-1.5 text-emerald-400">
-                    <span className="size-2 animate-pulse rounded-full bg-emerald-400" />
-                    Tracking Time
-                  </span>
-                  <span className="font-medium text-white">{clientName(activeTimer.client_id)}</span>
-                </div>
-                <div className="font-mono text-3xl font-extrabold tracking-tight text-white">
+        {/* Compact SaaS Active Timer / Clock In Bar */}
+        <div className="flex items-center gap-3 rounded-xl border border-border/80 bg-card p-2.5 shadow-xs">
+          {activeTimer ? (
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 text-xs">
+                <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="font-medium text-foreground">{clientName(activeTimer.client_id)}</span>
+                <span className="font-mono font-bold text-foreground bg-accent/60 px-2 py-0.5 rounded-md text-xs">
                   {timerDuration}
-                </div>
-                <Button asChild size="sm" className="w-full brand-gradient text-white">
-                  <Link to="/time">
-                    <Clock className="mr-1.5 size-3.5" /> Manage &amp; Clock Out
-                  </Link>
-                </Button>
+                </span>
               </div>
-            ) : (
-              <div className="space-y-2.5">
-                <div className="flex items-center justify-between text-xs text-neutral-400">
-                  <span>Quick Clock In</span>
-                  <span className="text-neutral-500">Pick client</span>
-                </div>
-                <div className="flex gap-2">
-                  <Select value={clockInClientId} onValueChange={setClockInClientId}>
-                    <SelectTrigger className="h-8 border-white/10 bg-neutral-800/80 text-xs text-white">
-                      <SelectValue placeholder="Pick client" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {clients.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    size="sm"
-                    onClick={handleQuickClockIn}
-                    disabled={!clockInClientId}
-                    className="h-8 brand-gradient shrink-0 px-3 text-white"
-                  >
-                    <Play className="size-3 fill-current" />
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
+              <Button asChild size="sm" variant="outline" className="h-7.5 rounded-lg text-xs font-medium border-border/80">
+                <Link to="/time">
+                  <Clock className="mr-1.5 size-3" /> Stop / Manage
+                </Link>
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Select value={clockInClientId} onValueChange={setClockInClientId}>
+                <SelectTrigger className="h-8 w-44 rounded-lg text-xs bg-background border-border/80">
+                  <SelectValue placeholder="Quick clock-in client…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clients.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                size="sm"
+                onClick={handleQuickClockIn}
+                disabled={!clockInClientId}
+                className="h-8 rounded-lg bg-foreground text-background hover:bg-foreground/90 px-3 text-xs font-medium"
+              >
+                <Play className="mr-1 size-3 fill-current" /> Clock In
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Overview Stat Cards */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+      {/* Overview Stat Grid */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {/* Stat 1: Today's Time */}
-        <Card className="relative overflow-hidden rounded-2xl border-border/60 bg-card/60 backdrop-blur-md">
-          <CardContent className="p-4 sm:p-5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">Logged Today</span>
-              <span className="flex size-7 items-center justify-center rounded-xl bg-blue-500/10 text-blue-500">
-                <Clock className="size-4" />
-              </span>
-            </div>
-            <div className="mt-3 font-mono text-xl font-bold sm:text-2xl">
-              {hoursMinutes(todayHours)}
-            </div>
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              {activeTimer ? "Active timer running" : "From completed entries"}
-            </p>
-          </CardContent>
-        </Card>
+        <div className="rounded-xl border border-border/70 bg-card p-3 shadow-xs">
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-[11px] font-medium uppercase tracking-wider">Logged Today</span>
+            <Clock className="size-3.5 text-blue-500" />
+          </div>
+          <div className="mt-1.5 flex items-baseline gap-1.5">
+            <span className="text-xl font-bold tracking-tight text-foreground">{hoursMinutes(todayHours)}</span>
+            <span className="text-[11px] text-muted-foreground">{activeTimer ? "active" : "logged"}</span>
+          </div>
+        </div>
 
         {/* Stat 2: Active Clients */}
-        <Card className="relative overflow-hidden rounded-2xl border-border/60 bg-card/60 backdrop-blur-md">
-          <CardContent className="p-4 sm:p-5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">Active Clients</span>
-              <span className="flex size-7 items-center justify-center rounded-xl bg-[#FF4B33]/15 text-[#FF4B33]">
-                <Users className="size-4" />
-              </span>
-            </div>
-            <div className="mt-3 font-mono text-xl font-bold sm:text-2xl">
-              {clients.length}
-            </div>
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              {clients.filter((c) => c.retainer_hours).length} with monthly retainers
-            </p>
-          </CardContent>
-        </Card>
+        <div className="rounded-xl border border-border/70 bg-card p-3 shadow-xs">
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-[11px] font-medium uppercase tracking-wider">Active Clients</span>
+            <Users className="size-3.5 text-[#FF4B33]" />
+          </div>
+          <div className="mt-1.5 flex items-baseline gap-1.5">
+            <span className="text-xl font-bold tracking-tight text-foreground">{clients.length}</span>
+            <span className="text-[11px] text-muted-foreground">{clients.filter((c) => c.retainer_hours).length} retainers</span>
+          </div>
+        </div>
 
         {/* Stat 3: To-dos left */}
-        <Card className="relative overflow-hidden rounded-2xl border-border/60 bg-card/60 backdrop-blur-md">
-          <CardContent className="p-4 sm:p-5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">Tasks Left</span>
-              <span className="flex size-7 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500">
-                <ListTodo className="size-4" />
-              </span>
-            </div>
-            <div className="mt-3 font-mono text-xl font-bold sm:text-2xl">
-              {pendingTodos.length}{" "}
-              <span className="text-xs font-normal text-muted-foreground">/ {todos.length}</span>
-            </div>
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              {todos.length === 0
-                ? "No tasks set"
-                : pendingTodos.length === 0
-                  ? "All caught up! 🎉"
-                  : "Due today"}
-            </p>
-          </CardContent>
-        </Card>
+        <div className="rounded-xl border border-border/70 bg-card p-3 shadow-xs">
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-[11px] font-medium uppercase tracking-wider">Tasks Due</span>
+            <ListTodo className="size-3.5 text-amber-500" />
+          </div>
+          <div className="mt-1.5 flex items-baseline gap-1.5">
+            <span className="text-xl font-bold tracking-tight text-foreground">{pendingTodos.length}</span>
+            <span className="text-[11px] text-muted-foreground">of {todos.length} left</span>
+          </div>
+        </div>
 
         {/* Stat 4: Timesheet Shortcut */}
-        <Card className="relative overflow-hidden rounded-2xl border-border/60 bg-card/60 backdrop-blur-md">
-          <CardContent className="p-4 sm:p-5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">Recent Entries</span>
-              <span className="flex size-7 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
-                <TrendingUp className="size-4" />
-              </span>
-            </div>
-            <div className="mt-3 font-mono text-xl font-bold sm:text-2xl">{recentLogs.length}</div>
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              Saved in your history
-            </p>
-          </CardContent>
-        </Card>
+        <div className="rounded-xl border border-border/70 bg-card p-3 shadow-xs">
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-[11px] font-medium uppercase tracking-wider">Recent Logs</span>
+            <TrendingUp className="size-3.5 text-emerald-500" />
+          </div>
+          <div className="mt-1.5 flex items-baseline gap-1.5">
+            <span className="text-xl font-bold tracking-tight text-foreground">{recentLogs.length}</span>
+            <span className="text-[11px] text-muted-foreground">saved entries</span>
+          </div>
+        </div>
       </div>
 
       {/* Main Grid: Recent Activity & Today's Checklist */}
@@ -461,11 +422,11 @@ export default function DashboardPage() {
           {/* Quick Shortcuts */}
           <div className="grid grid-cols-3 gap-2">
             <Link
-              to="/people"
+              to="/clients"
               className="flex items-center gap-2 rounded-xl border border-border/70 bg-card p-3 text-xs font-semibold text-foreground transition-all hover:border-[#FF4B33]/40 hover:bg-[#FF4B33]/5"
             >
               <Users className="size-4 text-[#FF4B33]" />
-              <span className="truncate">Onboard Client</span>
+              <span className="truncate">Workspaces & People</span>
             </Link>
             <Link
               to="/clients"

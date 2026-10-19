@@ -2,7 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router";
 import { AuthProvider, useAuth, type Profile } from "@/auth";
-import { AppHeader } from "@/components/app-header";
+import { AppSidebar } from "@/components/app-sidebar";
 import { Loading } from "@/components/async-state";
 import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
@@ -16,6 +16,7 @@ import BriefPage from "@/pages/brief";
 import CalendarPage from "@/pages/calendar";
 import SetPasswordPage from "@/pages/set-password";
 import TimePage from "@/pages/time";
+import ReportsPage from "@/pages/reports";
 import TodosPage from "@/pages/todos";
 import "./styles.css";
 
@@ -24,7 +25,7 @@ const teamLinks = [
   { href: "/calendar", label: "Calendar", short: "Plan" },
   { href: "/time", label: "Time Tracking", short: "Time" },
   { href: "/todos", label: "To-Do" },
-  { href: "/clients", label: "Clients" },
+  { href: "/clients", label: "Workspaces" },
 ];
 const clientLinks = [
   { href: "/portal", label: "Messages" },
@@ -32,7 +33,7 @@ const clientLinks = [
 ];
 const adminLinks = [
   ...teamLinks,
-  { href: "/people", label: "People" },
+  { href: "/reports", label: "Reports" },
 ];
 
 // UX gate only: RLS is what actually keeps each role to its own data.
@@ -46,12 +47,17 @@ function RoleLayout({ role }: { role: Profile["role"] }) {
     );
   if (profile?.role !== role) return <Navigate to="/" replace />;
   return (
-    <>
-      <AppHeader name={profile.client?.name ?? profile.name} links={role === "team" ? (profile.is_admin ? adminLinks : teamLinks) : clientLinks} />
-      <main className="mx-auto w-full max-w-6xl px-4 pb-16 pt-4">
-        <Outlet />
+    <div className="flex min-h-screen w-full bg-background text-foreground">
+      <AppSidebar
+        name={profile.client?.name ?? profile.name}
+        links={role === "team" ? (profile.is_admin ? adminLinks : teamLinks) : clientLinks}
+      />
+      <main className="flex-1 overflow-y-auto px-6 py-6 lg:px-8">
+        <div className="mx-auto w-full max-w-6xl">
+          <Outlet />
+        </div>
       </main>
-    </>
+    </div>
   );
 }
 
@@ -95,6 +101,7 @@ createRoot(document.getElementById("root")!).render(
             <Route path="/todos" element={<TodosPage />} />
             <Route path="/clients" element={<ClientsPage />} />
             <Route path="/people" element={<PeoplePage />} />
+            <Route path="/reports" element={<ReportsPage />} />
           </Route>
           <Route element={<RoleLayout role="client" />}>
             <Route path="/portal" element={<PortalPage />} />

@@ -1,4 +1,4 @@
-import { Clock, Download } from "lucide-react";
+import { BarChart3, Clock, Download, FileBarChart, TrendingUp, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router";
 import { toast } from "sonner";
@@ -35,15 +35,6 @@ function groups(rows: Row[], by: "client" | "user"): Group[] {
   return [...groupBy(rows, key)]
     .map(([id, rs]) => ({ id, name: rs[0][by]?.name ?? "—", rows: rs, ms: total(rs) }))
     .sort((a, b) => b.ms - a.ms);
-}
-
-function Line({ name, ms, strong }: { name: string; ms: number; strong?: boolean }) {
-  return (
-    <div className={strong ? "flex justify-between gap-4 p-4 font-medium" : "flex justify-between gap-4 px-4 py-2 text-sm text-muted-foreground"}>
-      <span className="min-w-0 truncate">{name}</span>
-      <span className="shrink-0 tabular-nums">{hoursMinutes(ms)}</span>
-    </div>
-  );
 }
 
 // Admin-only: everyone's finished time, by client and by person. RLS is what lets
@@ -91,6 +82,8 @@ export default function ReportsPage() {
   if (!profile?.is_admin) return <Navigate to="/time" replace />;
 
   const byClient = rows ? groups(rows, "client") : [];
+  const byPerson = rows ? groups(rows, "user") : [];
+  const totalMs = rows ? total(rows) : 0;
 
   function exportCsv() {
     downloadCsv(`vmh-hours-${range.from}-to-${range.to}.csv`, [
@@ -108,90 +101,279 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="grid gap-8">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">Reports</h1>
-          <p className="text-sm text-muted-foreground">
-            {rows ? (
-              <>
-                <span className="font-medium text-foreground">{hoursMinutes(total(rows))}</span> across{" "}
-                {byClient.length} {byClient.length === 1 ? "client" : "clients"} · {rows.length}{" "}
-                {rows.length === 1 ? "entry" : "entries"}
-              </>
-            ) : failed ? (
-              "Couldn't load"
-            ) : (
-              "Loading…"
+    <div className="space-y-5">
+      {/* SaaS Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/70 pb-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span>Vertex Agency</span>
+            <span>/</span>
+            <span className="font-semibold text-foreground">Reports</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="flex size-8 items-center justify-center rounded-xl bg-[#FF4B33]/15 text-[#FF4B33]">
+              <FileBarChart className="size-4" />
+            </span>
+            <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+              Time Reports
+            </h1>
+            {rows && (
+              <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
+                {rows.length} entries
+              </span>
             )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Agency-wide billable hours breakdown across all clients and team members.
           </p>
         </div>
-        <div className="grid w-full grid-cols-2 items-end gap-3 sm:flex sm:w-auto">
-          <Label className="grid min-w-0 gap-1 text-xs text-muted-foreground">
-            From
-            <Input
-              type="date"
-              className="min-w-0"
-              value={range.from}
-              onChange={(e) => setRange((r) => ({ ...r, from: e.target.value || r.from }))}
-            />
-          </Label>
-          <Label className="grid min-w-0 gap-1 text-xs text-muted-foreground">
-            To
-            <Input
-              type="date"
-              className="min-w-0"
-              value={range.to}
-              onChange={(e) => setRange((r) => ({ ...r, to: e.target.value || r.to }))}
-            />
-          </Label>
-          <Button variant="outline" className="col-span-2" onClick={exportCsv} disabled={!rows?.length}>
-            <Download /> Export CSV
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            className="rounded-xl text-xs h-9 border-border/80"
+            onClick={exportCsv}
+            disabled={!rows?.length}
+          >
+            <Download className="mr-1.5 size-3.5" /> Export CSV
           </Button>
         </div>
       </div>
 
+      {/* KPI Stats Row */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="rounded-xl border border-border/70 bg-card p-3 shadow-xs">
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-[11px] font-medium uppercase tracking-wider">Total Hours</span>
+            <Clock className="size-3.5 text-blue-500" />
+          </div>
+          <div className="mt-1.5 flex items-baseline gap-1.5">
+            <span className="text-xl font-bold tracking-tight text-foreground">
+              {rows ? hoursMinutes(totalMs) : "—"}
+            </span>
+            <span className="text-[11px] text-muted-foreground">logged</span>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-border/70 bg-card p-3 shadow-xs">
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-[11px] font-medium uppercase tracking-wider">Entries</span>
+            <BarChart3 className="size-3.5 text-[#FF4B33]" />
+          </div>
+          <div className="mt-1.5 flex items-baseline gap-1.5">
+            <span className="text-xl font-bold tracking-tight text-foreground">
+              {rows ? rows.length : "—"}
+            </span>
+            <span className="text-[11px] text-muted-foreground">time logs</span>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-border/70 bg-card p-3 shadow-xs">
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-[11px] font-medium uppercase tracking-wider">Clients</span>
+            <TrendingUp className="size-3.5 text-emerald-500" />
+          </div>
+          <div className="mt-1.5 flex items-baseline gap-1.5">
+            <span className="text-xl font-bold tracking-tight text-foreground">
+              {byClient.length}
+            </span>
+            <span className="text-[11px] text-muted-foreground">billed</span>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-border/70 bg-card p-3 shadow-xs">
+          <div className="flex items-center justify-between text-muted-foreground">
+            <span className="text-[11px] font-medium uppercase tracking-wider">Team</span>
+            <Users className="size-3.5 text-purple-500" />
+          </div>
+          <div className="mt-1.5 flex items-baseline gap-1.5">
+            <span className="text-xl font-bold tracking-tight text-foreground">
+              {byPerson.length}
+            </span>
+            <span className="text-[11px] text-muted-foreground">members</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Date Range Filter Bar */}
+      <div className="grid grid-cols-1 gap-3 rounded-2xl border border-border/60 bg-card/40 p-4 sm:grid-cols-2 backdrop-blur-md shadow-sm">
+        <div className="space-y-1.5">
+          <Label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">From Date</Label>
+          <Input
+            type="date"
+            className="h-9 rounded-xl bg-background/60 text-xs"
+            value={range.from}
+            onChange={(e) => setRange((r) => ({ ...r, from: e.target.value || r.from }))}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">To Date</Label>
+          <Input
+            type="date"
+            className="h-9 rounded-xl bg-background/60 text-xs"
+            value={range.to}
+            onChange={(e) => setRange((r) => ({ ...r, to: e.target.value || r.to }))}
+          />
+        </div>
+      </div>
+
+      {/* Content */}
       {failed && (
-        <Card>
+        <Card className="rounded-2xl">
           {/* a fresh range object is what re-runs the fetch effect */}
           <LoadFailed message={failed} onRetry={() => setRange((r) => ({ ...r }))} />
         </Card>
       )}
 
       {!failed && !rows && (
-        <Card>
+        <Card className="rounded-2xl p-10">
           <Loading />
         </Card>
       )}
 
       {rows?.length === 0 && (
-        <Card>
-          <div className="grid justify-items-center gap-2 py-10 text-center text-sm text-muted-foreground">
-            <Clock className="size-5" />
-            No time logged in this range.
+        <Card className="rounded-2xl border-dashed border-border/70 p-10">
+          <div className="grid justify-items-center gap-2 text-center text-sm text-muted-foreground">
+            <div className="flex size-12 items-center justify-center rounded-2xl bg-muted/60">
+              <Clock className="size-6" />
+            </div>
+            <h3 className="mt-2 text-sm font-semibold text-foreground">No time logged</h3>
+            <p className="text-xs text-muted-foreground">
+              No entries found in this date range. Adjust the filters above.
+            </p>
           </div>
         </Card>
       )}
 
       {!!rows?.length && (
-        <div className="grid gap-8 md:grid-cols-[1fr_260px]">
-          <section className="grid content-start gap-3">
-            <h2 className="text-lg font-semibold">By client</h2>
-            {byClient.map((c) => (
-              <Card key={c.id} className="divide-y">
-                <Line name={c.name} ms={c.ms} strong />
-                {groups(c.rows, "user").map((p) => (
-                  <Line key={p.id} name={p.name} ms={p.ms} />
-                ))}
-              </Card>
-            ))}
+        <div className="grid gap-6 lg:grid-cols-12">
+          {/* Left Column: By Client (7 cols) */}
+          <section className="space-y-4 lg:col-span-7">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-bold tracking-tight">By Client</h2>
+                <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-semibold text-muted-foreground">
+                  {byClient.length} clients
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {byClient.map((c) => {
+                const personBreakdown = groups(c.rows, "user");
+                const pct = totalMs ? Math.round((c.ms / totalMs) * 100) : 0;
+
+                return (
+                  <Card key={c.id} className="overflow-hidden rounded-2xl border-border/60 shadow-sm">
+                    {/* Client Header */}
+                    <div className="flex items-center justify-between p-4 border-b border-border/40">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[#FF4B33]/15 text-sm font-bold text-[#FF4B33]">
+                          {c.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-foreground truncate">{c.name}</p>
+                          <p className="text-[11px] text-muted-foreground">
+                            {c.rows.length} entries · {personBreakdown.length} team member{personBreakdown.length !== 1 && "s"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="font-mono text-sm font-bold text-foreground">{hoursMinutes(c.ms)}</p>
+                        <p className="text-[10px] text-muted-foreground">{pct}% of total</p>
+                      </div>
+                    </div>
+
+                    {/* Usage Bar */}
+                    <div className="px-4 pt-3 pb-1">
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-accent/60">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-[#FF4B33] to-[#FF6B55] transition-all duration-500"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Person Rows */}
+                    <div className="divide-y divide-border/30 px-4">
+                      {personBreakdown.map((p) => (
+                        <div key={p.id} className="flex items-center justify-between py-2.5 text-xs">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-foreground">
+                              {p.name.charAt(0).toUpperCase()}
+                            </div>
+                            <span className="truncate font-medium text-foreground/80">{p.name}</span>
+                          </div>
+                          <span className="shrink-0 font-mono font-semibold text-foreground/70 tabular-nums">
+                            {hoursMinutes(p.ms)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
           </section>
-          <section className="grid content-start gap-3">
-            <h2 className="text-lg font-semibold">By person</h2>
-            <Card className="divide-y">
-              {groups(rows, "user").map((p) => (
-                <Line key={p.id} name={p.name} ms={p.ms} strong />
-              ))}
+
+          {/* Right Column: By Person (5 cols) */}
+          <section className="space-y-4 lg:col-span-5">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-bold tracking-tight">By Team Member</h2>
+              <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-semibold text-muted-foreground">
+                {byPerson.length} people
+              </span>
+            </div>
+
+            <Card className="overflow-hidden rounded-2xl border-border/60 shadow-sm divide-y divide-border/40">
+              {byPerson.map((p) => {
+                const pct = totalMs ? Math.round((p.ms / totalMs) * 100) : 0;
+                return (
+                  <div key={p.id} className="p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#FF4B33]/15 text-xs font-bold text-[#FF4B33]">
+                          {p.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-foreground truncate">{p.name}</p>
+                          <p className="text-[10px] text-muted-foreground">{p.rows.length} entries</p>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="font-mono text-sm font-bold text-foreground">{hoursMinutes(p.ms)}</p>
+                        <p className="text-[10px] text-muted-foreground">{pct}%</p>
+                      </div>
+                    </div>
+
+                    <div className="h-1 w-full overflow-hidden rounded-full bg-accent/60">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-purple-500 to-purple-400 transition-all duration-500"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </Card>
+
+            {/* Summary Card */}
+            <Card className="rounded-2xl border-border/60 p-4 shadow-sm">
+              <div className="space-y-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Period Summary</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-xl bg-accent/40 p-3 text-center">
+                    <p className="font-mono text-lg font-bold text-foreground">{hoursMinutes(totalMs)}</p>
+                    <p className="text-[10px] text-muted-foreground">Total Hours</p>
+                  </div>
+                  <div className="rounded-xl bg-accent/40 p-3 text-center">
+                    <p className="font-mono text-lg font-bold text-foreground">
+                      {rows.length ? hoursMinutes(Math.round(totalMs / byPerson.length)) : "—"}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">Avg per Person</p>
+                  </div>
+                </div>
+              </div>
             </Card>
           </section>
         </div>
